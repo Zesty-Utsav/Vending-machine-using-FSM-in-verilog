@@ -1,14 +1,16 @@
 module vending_machine(
-	input clk, rst, add_more, dispence,
+	input clk, rst, dispence, selection,
 	input [3:0] product_id, // LSB will be quantity, 0->1 quantity and 1->2 quantity
 	input [5:0] money_in,
+	// output no_more_selection,
 	output reg ready,dispenced,
 	output reg [8:0] change_out	//total will not exceed from 510
 );
+	reg [6:0] price_LUT[0:15];
 	reg [8:0] total;
 	reg [8:0] entered_money;
+	reg [2:0] state;
 	
-	reg [6:0]price_LUT[0:15];
 	/*
 	toffee        = 5'd5;   //000
 	wafer_chips   = 5'd10;  //001
@@ -18,16 +20,15 @@ module vending_machine(
 	kitkat        = 5'd30;  //101
 	milk			  = 5'd35;	//110
 	soft drink	  = 5'd50;	//111
-	
 	*/
 	
 	localparam [2:0]
-	ideal = 3'b0,
-	product_select = 3'b001,
-	add_more_product = 3'b010,
-	collect_money = 3'b011,
-	ready_to_dispence = 3'b100,
-	clear_up = 3'b101; 
+		s_ideal = 3'b0,
+		s_product_select = 3'b001,
+		s_add_more_product = 3'b010,
+		s_collect_money = 3'b011,
+		s_ready_to_dispence = 3'b100,
+		s_clear_up = 3'b101; 
 		
 	initial begin
 		price_LUT[0] = 7'd5;
@@ -46,8 +47,70 @@ module vending_machine(
 		price_LUT[13] = 7'd80;
 		price_LUT[14] = 7'd50;
 		price_LUT[15] = 7'd100;
+		change_out <= 0;
+		dispenced <= 0;
+		ready <= 0;
 	end
 	
-
-
+	always @(posedge clk) begin
+		if(rst) begin
+			total <= 0;
+			change_out <= entered_money;
+			entered_money <= 0;
+			ready <= 0;
+			dispenced <= 0;
+			state <= s_ideal;
+		end
+		else begin
+			case (state)
+				s_ideal: begin
+					state <= selection ? s_product_select : s_ideal;
+				end
+				
+				s_product_select: begin					
+					state <= selection ? s_product_select : s_collect_money;
+					if(!selection) begin end
+					else begin
+						total <= total + price_LUT[product_id];
+					end
+				end
+				
+				s_collect_money: begin
+					entered_money <= entered_money + money_in;
+					if ((entered_money + money_in) >= total)begin
+						state <= s_ready_to_dispence;
+						ready <= 1;
+					end
+					else begin
+						state <= s_collect_money;
+					end
+						
+				end
+				
+				s_ready_to_dispence: begin
+					if(dispence) begin
+						state <= s_clear_up;
+						change_out <= entered_money - total;
+						ready <= 0;
+					end
+					else if(selection) begin
+						state <= s_product_select;
+					end
+					else begin
+						state <= s_ready_to_dispence;
+					end
+				end
+				
+				s_clear_up: begin
+					state <= s_ideal;
+					total <= 0;
+					dispenced <= 0;
+				end		
+		
+				default: 
+					state <= 0;
+			
+			endcase
+		end
+	end
 endmodule
