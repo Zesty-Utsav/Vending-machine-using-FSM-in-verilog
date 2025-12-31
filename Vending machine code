@@ -1,0 +1,53 @@
+module vending_machine(
+	input clk, rst, add_more, dispence,
+	input [3:0] product_id, // LSB will be quantity, 0->1 quantity and 1->2 quantity
+	input [5:0] money_in,
+	output reg ready,dispenced,
+	output reg [8:0] change_out	//total will not exceed from 510
+);
+	reg [8:0] total;
+	reg [8:0] entered_money;
+	
+	reg [6:0]price_LUT[0:15];
+	/*
+	toffee        = 5'd5;   //000
+	wafer_chips   = 5'd10;  //001
+	fruit_juice   = 5'd15;  //010
+	paper_boat    = 5'd20;  //011
+	water_bottle  = 5'd25;  //100
+	kitkat        = 5'd30;  //101
+	milk			  = 5'd35;	//110
+	soft drink	  = 5'd50;	//111
+	
+	*/
+	
+	localparam [2:0]
+	ideal = 3'b0,
+	product_select = 3'b001,
+	add_more_product = 3'b010,
+	collect_money = 3'b011,
+	ready_to_dispence = 3'b100,
+	clear_up = 3'b101; 
+		
+	initial begin
+		price_LUT[0] = 7'd5;
+		price_LUT[1] = 7'd10;
+		price_LUT[2] = 7'd10;
+		price_LUT[3] = 7'd20;
+		price_LUT[4] = 7'd15;
+		price_LUT[5] = 7'd30;
+		price_LUT[6] = 7'd20;
+		price_LUT[7] = 7'd40;
+		price_LUT[8] = 7'd25;
+		price_LUT[9] = 7'd50;
+		price_LUT[10] = 7'd30;
+		price_LUT[11] = 7'd60;
+		price_LUT[12] = 7'd40;
+		price_LUT[13] = 7'd80;
+		price_LUT[14] = 7'd50;
+		price_LUT[15] = 7'd100;
+	end
+	
+
+
+endmodule
