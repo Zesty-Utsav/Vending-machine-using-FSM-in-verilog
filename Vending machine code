@@ -47,9 +47,9 @@ module vending_machine(
 		price_LUT[13] = 7'd80;
 		price_LUT[14] = 7'd50;
 		price_LUT[15] = 7'd100;
-		change_out <= 0;
-		dispenced <= 0;
-		ready <= 0;
+		change_out = 0;
+		dispenced = 0;
+		ready = 0;
 	end
 	
 	always @(posedge clk) begin
@@ -105,6 +105,8 @@ module vending_machine(
 					state <= s_ideal;
 					total <= 0;
 					dispenced <= 0;
+					entered_money <= 0;
+					change_out <= 0;
 				end		
 		
 				default: 
