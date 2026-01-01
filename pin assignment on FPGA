@@ -1,0 +1,15 @@
+clk -> push button(0)
+rst -> switch(17)
+selection -> switch(4)
+dispense -> switch(16)
+product_id -> switch(3-0)
+money_in -> switch(15:10)
+
+ready -> LEDR(0)
+dispensed -> LEDG(1)
+change_out -> LEDR(8:0)
+state -> LEDR(17-15)
+
+entered_money -> seg (2:0)
+total -> seg (5:3)
+change -> seg (7,6)
