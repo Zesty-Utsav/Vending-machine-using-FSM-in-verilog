@@ -2,14 +2,18 @@ module vending_machine(
 	input clk, rst, dispence, selection,
 	input [3:0] product_id, // LSB will be quantity, 0->1 quantity and 1->2 quantity
 	input [5:0] money_in,
+	output reg [2:0] state,
 	// output no_more_selection,
 	output reg ready,dispenced,
-	output reg [8:0] change_out	//total will not exceed from 510
+	output reg [8:0] change_out,	//total will not exceed from 510
+	output [6:0] 		seg_total_1, seg_total_2, seg_total_3,	// 2 = MSB, 1 = LSB
+							seg_change_1, seg_change_2,
+							seg_entered_money_1, seg_entered_money_2, seg_entered_money_3
 );
 	reg [6:0] price_LUT[0:15];
 	reg [8:0] total;
 	reg [8:0] entered_money;
-	reg [2:0] state;
+	//reg [2:0] state;
 	
 	/*
 	toffee        = 5'd5;   //000
@@ -59,50 +63,53 @@ module vending_machine(
 			entered_money <= 0;
 			ready <= 0;
 			dispenced <= 0;
-			state <= s_ideal;
+			state = s_ideal;
 		end
 		else begin
 			case (state)
 				s_ideal: begin
-					state <= selection ? s_product_select : s_ideal;
+					state = selection ? s_product_select : s_ideal;
 				end
 				
 				s_product_select: begin					
-					state <= selection ? s_product_select : s_collect_money;
-					if(!selection) begin end
+					state = selection ? s_product_select : s_collect_money;
+					if(!selection || (total + price_LUT[product_id])>510) begin end
 					else begin
 						total <= total + price_LUT[product_id];
 					end
 				end
 				
 				s_collect_money: begin
-					entered_money <= entered_money + money_in;
-					if ((entered_money + money_in) >= total)begin
-						state <= s_ready_to_dispence;
+					if((entered_money + money_in) <511) begin 
+						entered_money <= entered_money + money_in;
+					end
+					else if ((entered_money + money_in) >= total)begin
+						state = s_ready_to_dispence;
 						ready <= 1;
 					end
 					else begin
-						state <= s_collect_money;
+						state = s_collect_money;
 					end
 						
 				end
 				
 				s_ready_to_dispence: begin
 					if(dispence) begin
-						state <= s_clear_up;
+						state = s_clear_up;
 						change_out <= entered_money - total;
 						ready <= 0;
 					end
 					else if(selection) begin
-						state <= s_product_select;
+						state = s_product_select;
+						ready <= 0;
 					end
 					else begin
-						state <= s_ready_to_dispence;
+						state = s_ready_to_dispence;
 					end
 				end
 				
 				s_clear_up: begin
-					state <= s_ideal;
+					state = s_ideal;
 					total <= 0;
 					dispenced <= 0;
 					entered_money <= 0;
@@ -110,9 +117,39 @@ module vending_machine(
 				end		
 		
 				default: 
-					state <= 0;
+					state = 0;
 			
 			endcase
 		end
 	end
+	assign seg_change_1 = bcd_to_7seg(change_out%10);
+	assign seg_change_2 = bcd_to_7seg(change_out/10);
+	
+	assign seg_total_1 = bcd_to_7seg(total%10);
+	assign seg_total_2 = bcd_to_7seg((total/10)%10);
+	assign seg_total_3 = bcd_to_7seg((total/100));
+	
+	assign seg_entered_money_1 = bcd_to_7seg(entered_money%10);
+	assign seg_entered_money_2 = bcd_to_7seg((entered_money/10)%10);
+	assign seg_entered_money_3 = bcd_to_7seg((entered_money/100));
+	
+	function [6:0] bcd_to_7seg;
+			  input [3:0] BCD;
+			  begin
+					case (BCD)
+						4'd0: bcd_to_7seg = 7'b1000000;
+						4'd1: bcd_to_7seg = 7'b1111001;
+						4'd2: bcd_to_7seg = 7'b0100100;
+						4'd3: bcd_to_7seg = 7'b0110000;
+						4'd4: bcd_to_7seg = 7'b0011001;
+						4'd5: bcd_to_7seg = 7'b0010010;
+						4'd6: bcd_to_7seg = 7'b0000010;
+						4'd7: bcd_to_7seg = 7'b1111000;
+						4'd8: bcd_to_7seg = 7'b0000000;
+						4'd9: bcd_to_7seg = 7'b0010000;
+						default: bcd_to_7seg = 7'b1111111;
+					endcase
+			  end
+		 endfunction
+		 
 endmodule
