@@ -151,5 +151,4 @@ module vending_machine(
 					endcase
 			  end
 		 endfunction
-		 
 endmodule
